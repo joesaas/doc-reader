@@ -7,12 +7,16 @@ import { CATEGORIES, isCategoryId, suggestCategory } from "../../shared/categori
 import type { CategoryId, DocMeta } from "../../shared/types.js";
 import { parseHtml, isAnswerMeWithHtml } from "./parse.js";
 import { listDocs, getDoc, addDoc, updateDoc, removeDoc, docFilePath } from "./store.js";
+import { aiRouter } from "./ai.js";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
 
 app.use(cors());
+// AI 接口要收整篇 HTML 的 JSON，单独放宽到 15mb；其余接口保持 1mb
+app.use("/api/ai", express.json({ limit: "15mb" }));
 app.use(express.json({ limit: "1mb" }));
+app.use("/api/ai", aiRouter);
 
 const upload = multer({
   storage: multer.memoryStorage(),

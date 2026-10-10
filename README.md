@@ -37,7 +37,15 @@ npm start
 
 打开 http://localhost:5173 （开发）或 http://localhost:3001 （生产）。
 
-环境变量：`PORT`（默认 3001）、`DATA_DIR`（默认 `./data`）。
+环境变量：`PORT`（默认 3001）、`DATA_DIR`（默认 `./data`）、`DOC_READER_API_KEY`（设置后 AI 写接口需带 Key）、`DOC_READER_ALLOW_PRIVATE_URLS`（`1` 放行 from-url 抓内网地址）。
+
+## 给 AI 用（AI API）
+
+除了网页上传，平台提供一套纯 JSON 的 AI 专用接口：能力发现、JSON 上传（内容去重 + `externalId` 覆盖更新）、批量上传、URL 导入、紧凑搜索、纯文本读取，并附 OpenAPI 规范。见 [docs/AI_API.md](docs/AI_API.md)。
+
+```bash
+curl http://localhost:3001/api/ai   # 能力发现：分类枚举 + 接口清单
+```
 
 ## API
 
@@ -67,3 +75,5 @@ data/              运行时数据（index.json + files/，已 gitignore）
 ## 自检
 
 服务启动后运行 `npm run smoke`，自动验证：上传 → 标题解析 → 自动分类 → 分类列表 → 原文服务 → 全文搜索 → 删除 全链路。
+
+`npm run smoke:ai` 是自包含的 AI API 自检（自己拉起带 Key 的临时实例）：发现 → 鉴权 → JSON 上传 → 去重 → externalId 覆盖 → 批量 → 搜索 → 纯文本 → URL 导入 → SSRF 拦截。

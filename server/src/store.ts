@@ -1,7 +1,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import type { DocMeta } from "../../shared/types.js";
+
+export function hashHtml(html: string): string {
+  return createHash("sha256").update(html, "utf8").digest("hex");
+}
 
 const DATA_DIR = process.env.DATA_DIR ?? path.resolve(process.cwd(), "data");
 const FILES_DIR = path.join(DATA_DIR, "files");
@@ -48,7 +52,7 @@ export function docFilePath(doc: DocMeta): string {
 }
 
 export async function addDoc(
-  meta: Omit<DocMeta, "id" | "fileName" | "createdAt" | "updatedAt">,
+  meta: Omit<DocMeta, "id" | "fileName" | "createdAt" | "updatedAt" | "contentHash">,
   html: string,
 ): Promise<DocMeta> {
   const all = await ensureLoaded();
@@ -58,6 +62,7 @@ export async function addDoc(
     ...meta,
     id,
     fileName: `${id}.html`,
+    contentHash: hashHtml(html),
     createdAt: now,
     updatedAt: now,
   };
@@ -93,6 +98,57 @@ export async function removeDoc(id: string): Promise<boolean> {
 export async function findByOriginalName(name: string): Promise<DocMeta | undefined> {
   const all = await ensureLoaded();
   return all.find((d) => d.originalName === name);
+}
+
+export async function findByExternalId(externalId: string): Promise<DocMeta | undefined> {
+  const all = await ensureLoaded();
+  return all.find((d) => d.externalId === externalId);
+}
+
+/** 按内容哈希找文档；老数据没有 hash 的，现读文件回算并顺手补上 */
+export async function findByContentHash(hash: string): Promise<DocMeta | undefined> {
+  const all = await ensureLoaded();
+  let dirty = false;
+  for (const doc of all) {
+    if (!doc.contentHash) {
+      try {
+        const html = await fs.readFile(docFilePath(doc), "utf8");
+        doc.contentHash = hashHtml(html);
+        dirty = true;
+      } catch { /* 文件丢了就跳过 */ }
+    }
+    if (doc.contentHash === hash) {
+      if (dirty) await persist();
+      return doc;
+    }
+  }
+  if (dirty) await persist();
+  return undefined;
+}
+
+/** 覆盖一篇文档的内容与元数据（externalId upsert 用），id 与创建时间不变 */
+export async function replaceDoc(
+  id: string,
+  patch: Partial<Pick<DocMeta, "title" | "description" | "category" | "tags" | "source" | "generator" | "originalName">>,
+  html: string,
+): Promise<DocMeta | undefined> {
+  const all = await ensureLoaded();
+  const doc = all.find((d) => d.id === id);
+  if (!doc) return undefined;
+  await fs.writeFile(docFilePath(doc), html, "utf8");
+  Object.assign(doc, patch, {
+    size: Buffer.byteLength(html, "utf8"),
+    contentHash: hashHtml(html),
+    updatedAt: new Date().toISOString(),
+  });
+  await persist();
+  return doc;
+}
+
+/** 导入脚本用：同标题已存在则视为重复生成（如同一页面生成两次），跳过后到的 */
+export async function findByTitle(title: string): Promise<DocMeta | undefined> {
+  const all = await ensureLoaded();
+  return all.find((d) => d.title === title);
 }
 
 export { DATA_DIR, FILES_DIR };

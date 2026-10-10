@@ -35,6 +35,10 @@ export interface DocMeta {
   size: number;
   createdAt: string;
   updatedAt: string;
+  /** sha256(html)，AI 接口按内容去重用；老数据可能缺失，按需回算 */
+  contentHash?: string;
+  /** AI 侧的稳定标识：同一 externalId 再次提交 = 覆盖更新（upsert） */
+  externalId?: string;
 }
 
 export interface ParsedHtml {
