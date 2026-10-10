@@ -1,0 +1,69 @@
+# DocReader · 文档阅读平台
+
+按分类管理、阅读 HTML 文档的平台。为 [answer-me-with-html](https://github.com/QingYunA/answer-me-with-html) 这类 skill 生成的自包含 HTML 页面而设计：上传即自动抽标题、识别来源、按关键词建议分类；也可以一条命令把已生成的页面整批导入。
+
+## 功能
+
+- **分类展示（稳定列表）**：分类与顺序写死在 `shared/categories.ts`，前后端共用一份定义，不随数据漂移。内置 Agent / DeFi / Blockchain / 协议 / 安全 / 网络 / 工程 / 其他。
+- **上传 HTML**：拖拽多文件上传。上传前先解析预览——标题、简介、generator，并按关键词打分给出**建议分类**，确认/改选后才落盘。
+- **全文搜索**：标题、简介、标签 + 正文全文。
+- **阅读**：文档在 sandboxed iframe 中渲染。页面自带的内联脚本可运行（交互排版），但运行在不透明源里，碰不到平台页面；原始文件接口同时带 `Content-Security-Policy: sandbox allow-scripts`。
+- **管理**：改标题/分类、下载原文件、删除；网格/列表视图；最新/最早/标题排序；深浅色主题。
+- **一键导入**：`npm run import:am` 扫描 `~/.answer-me-with-html/pages`（或指定目录）整批导入，同名文件自动跳过，可重复运行。
+
+## 技术栈
+
+- Node.js 20+ / TypeScript（前后端同仓、同语言）
+- 后端：Express + Multer，元数据存 `data/index.json`（原子写），文件存 `data/files/`，零数据库依赖
+- 前端：React 19 + Vite + Tailwind CSS 4 + lucide-react，界面布局参考主流文档站（侧边栏分类 + 卡片列表 + 全屏阅读）
+- 分类/类型定义在 `shared/`，服务端与前端共用
+
+## 快速开始
+
+```bash
+npm install
+
+# 开发模式（前端 5173，后端 3001，/api 自动代理）
+npm run dev
+
+# 导入你已有的 answer-me-with-html 页面（可选）
+npm run import:am
+# 或指定目录：npm run import:am -- ~/some/dir
+
+# 生产模式：构建后单进程跑（默认 3001）
+npm run build
+npm start
+```
+
+打开 http://localhost:5173 （开发）或 http://localhost:3001 （生产）。
+
+环境变量：`PORT`（默认 3001）、`DATA_DIR`（默认 `./data`）。
+
+## API
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/health` | 健康检查 |
+| GET | `/api/categories` | 分类列表（含每类计数，顺序稳定） |
+| GET | `/api/docs?category=&q=&sort=newest\|oldest\|title` | 文档列表，q 为全文搜索 |
+| GET | `/api/docs/:id` | 单篇元数据 |
+| GET | `/api/docs/:id/raw` | 原始 HTML（sandbox CSP） |
+| GET | `/api/docs/:id/download` | 下载原文件 |
+| POST | `/api/docs/parse` | 上传前解析预览（multipart: file） |
+| POST | `/api/docs` | 正式上传（multipart: files[] + meta JSON） |
+| PATCH | `/api/docs/:id` | 改标题/分类/标签/简介 |
+| DELETE | `/api/docs/:id` | 删除 |
+
+## 目录结构
+
+```
+shared/            前后端共用的类型与分类定义（含自动分类关键词）
+server/src/        Express API：index.ts（路由）/ store.ts（JSON 索引存储）/ parse.ts（HTML 解析）
+client/src/        React 前端：App.tsx（列表+阅读）/ components/UploadModal.tsx / lib/api.ts
+scripts/           import-am.ts（一键导入）/ smoke.mjs（全链路冒烟自检）
+data/              运行时数据（index.json + files/，已 gitignore）
+```
+
+## 自检
+
+服务启动后运行 `npm run smoke`，自动验证：上传 → 标题解析 → 自动分类 → 分类列表 → 原文服务 → 全文搜索 → 删除 全链路。
