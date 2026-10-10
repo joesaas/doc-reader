@@ -15,7 +15,7 @@ import { CATEGORIES, CATEGORY_IDS, isCategoryId, suggestCategory } from "../../s
 import type { CategoryId, DocMeta } from "../../shared/types.js";
 import { parseHtml, isAnswerMeWithHtml } from "./parse.js";
 import {
-  listDocs, getDoc, addDoc, findByContentHash, findByExternalId,
+  listDocs, getDoc, addDoc, findByContentHash, findByExternalId, attachExternalId,
   replaceDoc, hashHtml, docFilePath,
 } from "./store.js";
 
@@ -40,6 +40,11 @@ function checkApiKey(req: Request): boolean {
 function requireKey(req: Request, res: Response, next: NextFunction) {
   if (checkApiKey(req)) return next();
   return apiError(res, 401, "unauthorized", "需要 API Key：请求头带 X-API-Key 或 Authorization: Bearer <key>");
+}
+
+/** 供主路由（网页端写接口）复用同一把 DOC_READER_API_KEY 的鉴权中间件 */
+export function requireApiKey(req: Request, res: Response, next: NextFunction) {
+  return requireKey(req, res, next);
 }
 
 function docView(doc: DocMeta, base: string) {
@@ -118,6 +123,13 @@ export async function ingestHtml(input: IngestInput): Promise<IngestResult> {
       }
       const doc = await replaceDoc(existing.id, meta, html);
       return { status: "replaced", doc: doc! };
+    }
+    // externalId 是新的，但内容可能已由网页端/import:am 等无 externalId 的路径入库：
+    // 先查内容哈希，命中则去重（并给已有文档补绑这个 externalId），不能绕过去重直接新建。
+    const dup = await findByContentHash(hashHtml(html));
+    if (dup) {
+      const bound = dup.externalId ? dup : (await attachExternalId(dup.id, input.externalId)) ?? dup;
+      return { status: "deduped", doc: bound };
     }
     const doc = await addDoc({ ...meta, externalId: input.externalId }, html);
     return { status: "created", doc };

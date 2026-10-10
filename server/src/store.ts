@@ -105,6 +105,18 @@ export async function findByExternalId(externalId: string): Promise<DocMeta | un
   return all.find((d) => d.externalId === externalId);
 }
 
+/** 给已有文档补绑 externalId（不改内容与其它元数据）；已有 externalId 时不覆盖 */
+export async function attachExternalId(id: string, externalId: string): Promise<DocMeta | undefined> {
+  const all = await ensureLoaded();
+  const doc = all.find((d) => d.id === id);
+  if (!doc) return undefined;
+  if (!doc.externalId) {
+    doc.externalId = externalId;
+    await persist();
+  }
+  return doc;
+}
+
 /** 按内容哈希找文档；老数据没有 hash 的，现读文件回算并顺手补上 */
 export async function findByContentHash(hash: string): Promise<DocMeta | undefined> {
   const all = await ensureLoaded();

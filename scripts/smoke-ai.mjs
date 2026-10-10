@@ -88,6 +88,18 @@ try {
   const body2 = await up2.json();
   assert(up2.status === 200 && body2.status === "deduped" && body2.doc.id === id1, "same html -> deduped, same id");
 
+  // 5b) 回归：同内容 + 全新 externalId → 仍应命中内容去重（不得绕过哈希新建重复），
+  //     且 externalId 被补绑到已有文档上，之后用它提交新内容应走 replaced 且 id 不变
+  const up2b = await post("/api/ai/docs", { html: html1, externalId: "smoke-ext-bind" });
+  const body2b = await up2b.json();
+  assert(up2b.status === 200 && body2b.status === "deduped" && body2b.doc.id === id1, "same html + new externalId -> deduped, same id (no hash-dedup bypass)");
+  const up2c = await post("/api/ai/docs", {
+    html: `<!doctype html><html><head><title>AI上传测试 Agent 改版</title></head><body><p>agent a2a mcp 协议正文 abc123 def456</p></body></html>`,
+    externalId: "smoke-ext-bind",
+  });
+  const body2c = await up2c.json();
+  assert(up2c.status === 200 && body2c.status === "replaced" && body2c.doc.id === id1, "bound externalId + new content -> replaced, same id");
+
   // 6) externalId upsert：v1 建，v2 覆盖
   const v1 = await post("/api/ai/docs", {
     html: `<!doctype html><html><head><title>版本一</title></head><body><p>v1 marker111</p></body></html>`,
