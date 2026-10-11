@@ -7,7 +7,7 @@ import { CATEGORIES, isCategoryId, suggestCategory } from "../../shared/categori
 import type { CategoryId, DocMeta } from "../../shared/types.js";
 import { parseHtml, isAnswerMeWithHtml } from "./parse.js";
 import { listDocs, getDoc, addDoc, updateDoc, removeDoc, docFilePath } from "./store.js";
-import { aiRouter } from "./ai.js";
+import { aiRouter, requireApiKey } from "./ai.js";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -129,7 +129,7 @@ interface UploadMetaItem {
 }
 
 /** 正式上传：可多文件。meta 是与文件同序的 JSON 数组（表单字段 meta）。 */
-app.post("/api/docs", upload.array("files", 20), async (req, res) => {
+app.post("/api/docs", requireApiKey, upload.array("files", 20), async (req, res) => {
   const files = (req.files as Express.Multer.File[] | undefined) ?? [];
   if (files.length === 0) return res.status(400).json({ error: "没有收到文件" });
   let meta: UploadMetaItem[] = [];
@@ -167,7 +167,7 @@ app.post("/api/docs", upload.array("files", 20), async (req, res) => {
   res.status(201).json(created);
 });
 
-app.patch("/api/docs/:id", async (req, res) => {
+app.patch("/api/docs/:id", requireApiKey, async (req, res) => {
   const { title, description, category, tags } = req.body ?? {};
   const patch: Parameters<typeof updateDoc>[1] = {};
   if (typeof title === "string" && title.trim()) patch.title = title.trim();
@@ -180,7 +180,7 @@ app.patch("/api/docs/:id", async (req, res) => {
   res.json(doc);
 });
 
-app.delete("/api/docs/:id", async (req, res) => {
+app.delete("/api/docs/:id", requireApiKey, async (req, res) => {
   const ok = await removeDoc(req.params.id);
   if (!ok) return res.status(404).json({ error: "文档不存在" });
   textCache.delete(req.params.id);
