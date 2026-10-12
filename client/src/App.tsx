@@ -72,7 +72,7 @@ function Library({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => vo
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
               <BookOpen size={17} />
             </span>
-            DocReader
+            Agent 101
           </div>
           <div className="relative mx-auto w-full max-w-md flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -117,13 +117,6 @@ function Library({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => vo
                 onClick={() => setCategory(c.id)}
               />
             ))}
-            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-3.5 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="mb-1 font-medium text-zinc-700 dark:text-zinc-200">导入已有页面</p>
-              把 answer-me-with-html 生成的页面放进库里：
-              <code className="mt-1.5 block rounded bg-zinc-100 px-2 py-1 font-mono text-[11px] dark:bg-zinc-800">
-                npm run import:am
-              </code>
-            </div>
           </nav>
         </aside>
 
@@ -164,7 +157,7 @@ function Library({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => vo
             <div className="rounded-2xl border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
               <BookOpen className="mx-auto mb-3 text-zinc-300" size={36} />
               <p className="text-zinc-500">这里还没有文档</p>
-              <p className="mt-1 text-sm text-zinc-400">点右上角「上传文档」，或运行 npm run import:am 导入已有页面</p>
+              <p className="mt-1 text-sm text-zinc-400">点右上角「上传文档」添加第一篇</p>
             </div>
           ) : view === "grid" ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
