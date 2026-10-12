@@ -2,12 +2,29 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { promises as fs } from "node:fs";
 import { CATEGORIES, isCategoryId, suggestCategory } from "../../shared/categories.js";
 import type { CategoryId, DocMeta } from "../../shared/types.js";
 import { parseHtml, isAnswerMeWithHtml } from "./parse.js";
 import { listDocs, getDoc, addDoc, updateDoc, removeDoc, docFilePath } from "./store.js";
 import { aiRouter, requireApiKey } from "./ai.js";
+
+// 启动时加载 .env：真实进程环境变量优先，.env 只补缺（loadEnvFile 不覆盖已存在的变量）。
+// 候选路径覆盖服务工作目录、源码布局（server/src 上两级）与构建布局（dist/server/src 上三级）。
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+for (const candidate of [
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(moduleDir, "../../.env"),
+  path.resolve(moduleDir, "../../../.env"),
+]) {
+  try {
+    process.loadEnvFile(candidate);
+    break;
+  } catch {
+    // 该候选不存在就试下一个
+  }
+}
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
