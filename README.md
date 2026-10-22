@@ -39,6 +39,10 @@ npm start
 
 环境变量：`PORT`（默认 3001）、`DATA_DIR`（默认 `./data`）、`DOC_READER_API_KEY`（设置后 AI 写接口需带 Key）、`DOC_READER_ALLOW_PRIVATE_URLS`（`1` 放行 from-url 抓内网地址）。
 
+## 运维脚本（deploy.sh）
+
+仓库根的 `deploy.sh` 把日常运维收成一个入口，`./deploy.sh help` 列全部操作：`deploy`（拉代码→构建→重启→状态一键走完）、`update`、`build`、`start/stop/restart`、`status`、`logs [行数]`、`health`（本机服务/公网首页/公网 AI API 三项检查）、`smoke`（跑项目自检）。pm2 进程名脚本自动识别（现名 doc-reader、历史名 index 都认）。
+
 ## 给 AI 用（AI API）
 
 除了网页上传，平台提供一套纯 JSON 的 AI 专用接口：能力发现、JSON 上传（内容去重 + `externalId` 覆盖更新）、批量上传、URL 导入、紧凑搜索、纯文本读取，并附 OpenAPI 规范。见 [docs/AI_API.md](docs/AI_API.md)。
