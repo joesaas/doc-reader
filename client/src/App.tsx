@@ -335,13 +335,15 @@ function Reader({ id, onBack }: { id: string; onBack: () => void }) {
         )}
       </header>
       {/*
-        sandbox 只给 allow-scripts、不给 allow-same-origin：
-        文档里的脚本可以跑（交互排版），但运行在不透明源，碰不到平台页面与接口。
+        sandbox 给 allow-scripts + allow-same-origin：文档脚本可跑（交互排版），
+        且与主站同源、Clipboard API 可用（复制按钮）。代价：上传的 HTML 理论上
+        能碰主站 DOM——本站文档均为站长本人上传，风险可控；更稳妥的方案是把
+        /raw 挪到独立子域后再开 allow-same-origin。
       */}
       <iframe
         title={doc.title}
         src={`/api/docs/${doc.id}/raw`}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         className="w-full flex-1 border-0 bg-white"
       />
     </div>

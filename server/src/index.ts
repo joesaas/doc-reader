@@ -104,12 +104,14 @@ app.get("/api/docs/:id", async (req, res) => {
 /**
  * 原始文档：单独路径 + sandbox CSP。
  * answer-me-with-html 的页面带内联脚本（交互布局），需要 allow-scripts；
- * 但不给 allow-same-origin，脚本运行在不透明源里，碰不到平台页面。
+ * allow-same-origin 让文档与主站同源、Clipboard API 可用（文档内复制按钮）。
+ * 注意：iframe 的 sandbox 属性与这里的 CSP 同时生效、取交集，
+ * 只改一处的话另一处仍会把文档锁在不透明源。
  */
 app.get("/api/docs/:id/raw", async (req, res) => {
   const doc = await getDoc(req.params.id);
   if (!doc) return res.status(404).send("not found");
-  res.setHeader("Content-Security-Policy", "sandbox allow-scripts");
+  res.setHeader("Content-Security-Policy", "sandbox allow-scripts allow-same-origin");
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.sendFile(docFilePath(doc));
 });
